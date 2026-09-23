@@ -1,0 +1,52 @@
+services:
+  comfyui:
+    build: .
+    image: ${COMFYUI_IMAGE_NAME:-comfyui-comfyui}
+    container_name: ${COMFYUI_CONTAINER_NAME:-comfyui}
+    restart: unless-stopped
+    ports:
+      - "${COMFYUI_BIND_HOST:-127.0.0.1}:${COMFYUI_PORT:-8188}:8188"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+      - NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}
+      - HF_TOKEN=${HF_TOKEN:-}
+    # Requires the NVIDIA Container Toolkit installed on the host.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      # Large/downloadable assets persist on the host, independent of the container lifecycle.
+      - ./models:/workspace/ComfyUI/models
+      - ./output:/workspace/ComfyUI/output
+      - ./input:/workspace/ComfyUI/input
+      - ./user:/workspace/ComfyUI/user
+      - ./custom_nodes:/workspace/ComfyUI/custom_nodes
+      - ./logs:/workspace/ComfyUI/user/comfyui.log.d
+      - ./mcp/comfy_http_server.py:/opt/comfy-http-mcp/server.py:ro
+
+  # Streamable-HTTP MCP service consumed by World Graph Studio at
+  # http://host.lando.internal:9000/mcp (see MCP_Configuration.md).
+  comfyui-mcp:
+    build: .
+    image: ${COMFYUI_IMAGE_NAME:-comfyui-comfyui}
+    container_name: ${COMFYUI_MCP_CONTAINER_NAME:-comfyui-mcp}
+    restart: unless-stopped
+    depends_on:
+      - comfyui
+    ports:
+      - "${COMFYUI_BIND_HOST:-127.0.0.1}:${COMFYUI_MCP_PORT:-9000}:9000"
+    environment:
+      - COMFYUI_URL=http://comfyui:8188
+      - MCP_TRANSPORT=streamable-http
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=9000
+    volumes:
+      - ./models:/workspace/ComfyUI/models
+      - ./user:/workspace/ComfyUI/user
+      - ./mcp/comfy_http_server.py:/opt/comfy-http-mcp/server.py:ro
+    command: ["python3", "/opt/comfy-http-mcp/server.py"]
+

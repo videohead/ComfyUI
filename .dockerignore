@@ -1,0 +1,14 @@
+models/
+output/
+input/
+user/
+custom_nodes/
+logs/
+.git/
+.env
+.agents/
+.codex/
+.vscode/
+temp_downloads/
+ltx-text-to-video.json
+__pycache__/

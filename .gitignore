@@ -1,0 +1,18 @@
+.env
+.git/
+.agents/
+.codex/
+.vscode/
+__pycache__/
+
+# Local ComfyUI runtime state
+custom_nodes/
+input/
+logs/
+models/
+output/
+temp_downloads/
+user/
+
+# Local workflow and scratch files
+ltx-text-to-video.json
